@@ -1,0 +1,101 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: #f4f8f6;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.app {
+  width: 400px;
+  height: 650px;
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  text-align: center;
+  padding: 20px;
+  background: #e8f3ef;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 20px;
+  color: #2c3e50;
+}
+
+.subtitle {
+  margin: 5px 0 0 0;
+  font-size: 14px;
+  color: #5c7a73;
+}
+
+.chat {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.message {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.user {
+  align-self: flex-end;
+  background: #d4ebe4;
+}
+
+.bot {
+  align-self: flex-start;
+  background: #f0f0f0;
+}
+
+.input-area {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #eee;
+}
+
+input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+}
+
+button {
+  margin-left: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: none;
+  background: #6fb3a8;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+button:hover {
+  background: #5aa398;
+}
+
+.disclaimer {
+  font-size: 11px;
+  text-align: center;
+  padding: 8px;
+  color: #999;
+}

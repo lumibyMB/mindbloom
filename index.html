@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>MindBloom | Lumi</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="app">
+
+    <div class="header">
+      <h1>MindBloom</h1>
+      <p class="subtitle">Lumi está aquí contigo 🌿</p>
+    </div>
+
+    <div id="chat" class="chat"></div>
+
+    <div class="input-area">
+      <input 
+        type="text" 
+        id="input" 
+        placeholder="Escribe lo que sientes..."
+        autocomplete="off"
+      />
+      <button onclick="sendMessage()">Enviar</button>
+    </div>
+
+    <p class="disclaimer">
+      Este chat no sustituye ayuda profesional.
+    </p>
+
+  </div>
+
+  <script>
+    async function sendMessage() {
+      const input = document.getElementById("input");
+      const message = input.value.trim();
+      if (!message) return;
+
+      const chat = document.getElementById("chat");
+
+      // Mostrar mensaje del usuario
+      chat.innerHTML += `
+        <div class="message user">
+          <p>${message}</p>
+        </div>
+      `;
+
+      input.value = "";
+
+      try {
+        const response = await fetch("http://localhost:3000/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+
+        chat.innerHTML += `
+          <div class="message bot">
+            <p>${data.reply}</p>
+          </div>
+        `;
+
+        chat.scrollTop = chat.scrollHeight;
+
+      } catch (error) {
+        chat.innerHTML += `
+          <div class="message bot">
+            <p>Estoy teniendo un pequeño problema técnico. Intentemos otra vez.</p>
+          </div>
+        `;
+      }
+    }
+  </script>
+
+</body>
+</html>
