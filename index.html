@@ -33,47 +33,86 @@
   </div>
 
   <script>
+    let isFirstMessage = true;
+
+    function addMessage(role, text) {
+      const chat = document.getElementById("chat");
+
+      chat.innerHTML += `
+        <div class="message ${role}">
+          <p>${text}</p>
+        </div>
+      `;
+
+      chat.scrollTop = chat.scrollHeight;
+    }
+
     async function sendMessage() {
       const input = document.getElementById("input");
       const message = input.value.trim();
       if (!message) return;
 
-      const chat = document.getElementById("chat");
+      let userName = localStorage.getItem("userName");
 
-      // Mostrar mensaje del usuario
-      chat.innerHTML += `
-        <div class="message user">
-          <p>${message}</p>
-        </div>
-      `;
+      // 🧠 CONTROL TOTAL DEL FLUJO (AQUÍ ESTÁ EL FIX)
+      if (!userName) {
 
-      input.value = "";
+        // 💬 PRIMER MENSAJE → Lumi pregunta nombre (SIN backend)
+        if (isFirstMessage) {
+          addMessage("user", message);
+          addMessage("bot", "Hola 💖 soy Lumi. ¿Cómo te llamas?");
+
+          isFirstMessage = false;
+          input.value = "";
+          return;
+        }
+
+        // 🧠 SEGUNDO MENSAJE → guardar nombre
+        localStorage.setItem("userName", message);
+        userName = message;
+
+        addMessage("user", message);
+        addMessage("bot", `Mucho gusto, ${userName} 💖 ¿cómo te sientes hoy?`);
+
+        input.value = "";
+        return;
+      }
+
+      // 💬 CONVERSACIÓN NORMAL (YA CON NOMBRE)
+      addMessage("user", message);
 
       try {
         const response = await fetch("http://localhost:3000/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message })
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message,
+            userName
+          })
         });
 
         const data = await response.json();
 
-        chat.innerHTML += `
-          <div class="message bot">
-            <p>${data.reply}</p>
-          </div>
-        `;
-
-        chat.scrollTop = chat.scrollHeight;
+        addMessage("bot", data.reply);
 
       } catch (error) {
-        chat.innerHTML += `
-          <div class="message bot">
-            <p>Estoy teniendo un pequeño problema técnico. Intentemos otra vez.</p>
-          </div>
-        `;
+        addMessage("bot", "Estoy teniendo un pequeño problema técnico.");
       }
+
+      input.value = "";
     }
+
+    // 💬 MENSAJE INICIAL AUTOMÁTICO
+    window.onload = () => {
+      const userName = localStorage.getItem("userName");
+
+      if (!userName) {
+        addMessage("bot", "Hola 💖 soy Lumi. ¿Cómo te llamas?");
+        isFirstMessage = false;
+      }
+    };
   </script>
 
 </body>

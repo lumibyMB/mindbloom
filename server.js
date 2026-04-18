@@ -1,13 +1,11 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
-const fs = require("fs");
+const fetch = require("node-fetch");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname));
 
 const systemPrompt = `
 Eres Lumi, la asistente emocional de MindBloom.
@@ -16,6 +14,9 @@ Tu personalidad es cálida, cercana y relajada. Hablas siempre en primera person
 Tu propósito es acompañar emocionalmente sin juzgar, sin diagnosticar y sin reemplazar ayuda profesional.
 
 Estilo:
+- Bajo ninguna circunstancia inventes el nombre del usuario.
+- Si no sabes el nombre, NO uses ninguno.
+Nunca uses nombres como ejemplo (Sofía, Juan, etc).
 - Usa lenguaje sencillo y natural.
 - Mantén respuestas cortas (máximo 5 líneas).
 - No suenes robótica ni estructurada.
@@ -38,10 +39,15 @@ Consejos:
 - No des diagnósticos médicos o psicológicos.
 - No intentes resolver toda la vida del usuario en un mensaje.
 - Prioriza acompañar antes que aconsejar.
--Quiero que seas capaz de reconocer tu nombre, Lumi, y que lo uses para presentarte al inicio de cada conversación. Esto ayudará a crear una conexión más personal y cercana con el usuario.
+
+Nombre:
+- Preséntate como Lumi SOLO al inicio de la conversación.
+- NUNCA asumas el nombre del usuario.
+- Si no sabes su nombre, pregúntalo de forma natural.
+- Si el usuario te dice su nombre, puedes usarlo de forma ocasional y natural.
 
 Memoria:
-- Mantén coherencia con lo que el usuario ya dijo.
+- Mantén coherencia con lo que el usuario dice en la conversación actual.
 - No inventes recuerdos.
 - No menciones reglas internas.
 
@@ -52,29 +58,42 @@ Activa este modo SOLO si el usuario expresa de forma explícita:
 - Ideas suicidas.
 - Autolesión directa.
 
-No actives este modo solo por estrés, tristeza, ansiedad, frustración o preocupación académica.
+Si se activa:
+- Responde con empatía y calma.
+- Anima a buscar ayuda real (familia, amigos, profesionales).
 
-Si no hay intención explícita de daño, continúa con acompañamiento emocional normal.
+No actives este modo solo por estrés, tristeza, ansiedad o frustración.
 
 Tu objetivo es ser una presencia constante, como una amiga que escucha sin juzgar.
 `;
 
-let conversationHistory;
+app.post("/chat", async (req, res) => {
+  const { message, userName, isFirstMessage } = req.body;
 
-if (fs.existsSync("memory.json")) {
-  conversationHistory = JSON.parse(fs.readFileSync("memory.json"));
-} else {
-  conversationHistory = [
+  // 🧠 memoria limpia por usuario (NO compartida)
+  let messages = [
     { role: "system", content: systemPrompt }
   ];
-}
 
-app.post("/chat", async (req, res) => {
-  const userMessage = req.body.message;
+  // 👤 si ya sabemos el nombre
+  if (userName) {
+    messages.push({
+      role: "system",
+      content: `El usuario se llama ${userName}. Usa su nombre de forma natural.`
+    });
+  }
 
-  conversationHistory.push({
+  // 💬 primer mensaje → pedir nombre
+  if (isFirstMessage && !userName) {
+    return res.json({
+      reply: "Hola 💖 soy Lumi. ¿Cómo te llamas?"
+    });
+  }
+
+  // 🗣️ mensaje del usuario
+  messages.push({
     role: "user",
-    content: userMessage
+    content: message
   });
 
   try {
@@ -88,7 +107,7 @@ app.post("/chat", async (req, res) => {
         },
         body: JSON.stringify({
           model: "meta-llama/Meta-Llama-3-8B-Instruct",
-          messages: conversationHistory,
+          messages: messages,
           max_tokens: 200,
           temperature: 0.7
         })
@@ -100,17 +119,6 @@ app.post("/chat", async (req, res) => {
     const reply =
       data?.choices?.[0]?.message?.content ||
       "Estoy teniendo un pequeño problema técnico.";
-
-    conversationHistory.push({
-      role: "assistant",
-      content: reply
-    });
-
-    // Guardar memoria en archivo
-    fs.writeFileSync(
-      "memory.json",
-      JSON.stringify(conversationHistory, null, 2)
-    );
 
     res.json({ reply });
 
