@@ -33,8 +33,6 @@
   </div>
 
 <script>
-let step = "askName";
-
 function addMessage(role, text) {
   const chat = document.getElementById("chat");
 
@@ -54,17 +52,20 @@ async function sendMessage() {
 
   let userName = localStorage.getItem("userName");
 
-  // 👉 PASO 1 (YA NO REPITE PREGUNTA)
-  if (!userName && step === "askName") {
-    addMessage("user", message);
-    step = "getName";
+  const invalidWords = ["hola", "hey", "hi", "buenas", "holi"];
 
-    input.value = "";
-    return;
-  }
+  // 🧠 SI AÚN NO HAY NOMBRE
+  if (!userName) {
 
-  // 👉 PASO 2: guardar nombre
-  if (!userName && step === "getName") {
+    // 👉 si escribe algo tipo saludo → volver a pedir nombre
+    if (invalidWords.includes(message.toLowerCase())) {
+      addMessage("user", message);
+      addMessage("bot", "Hola 💖 soy Lumi. ¿Cómo te llamas?");
+      input.value = "";
+      return;
+    }
+
+    // 👉 si parece nombre → guardarlo directo
     localStorage.setItem("userName", message);
     userName = message;
 
@@ -75,7 +76,7 @@ async function sendMessage() {
     return;
   }
 
-  // 👉 conversación normal
+  // 💬 conversación normal
   addMessage("user", message);
 
   try {
@@ -110,7 +111,7 @@ document.getElementById("input").addEventListener("keypress", function(e) {
   if (e.key === "Enter") sendMessage();
 });
 
-// 👉 SOLO AQUÍ se pregunta el nombre
+// 👉 inicio limpio
 window.onload = () => {
   localStorage.removeItem("userName");
   addMessage("bot", "Hola 💖 soy Lumi. ¿Cómo te llamas?");
