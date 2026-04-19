@@ -32,8 +32,8 @@
 
   </div>
 
- <script>
-let step = "askName"; // controla flujo
+<script>
+let step = "askName";
 
 function addMessage(role, text) {
   const chat = document.getElementById("chat");
@@ -54,10 +54,9 @@ async function sendMessage() {
 
   let userName = localStorage.getItem("userName");
 
-  // 👉 PASO 1: pedir nombre
+  // 👉 PASO 1 (YA NO REPITE PREGUNTA)
   if (!userName && step === "askName") {
     addMessage("user", message);
-    addMessage("bot", "Hola 💖 soy Lumi. ¿Cómo te llamas?");
     step = "getName";
 
     input.value = "";
@@ -111,9 +110,9 @@ document.getElementById("input").addEventListener("keypress", function(e) {
   if (e.key === "Enter") sendMessage();
 });
 
-// 👉 INICIO LIMPIO
+// 👉 SOLO AQUÍ se pregunta el nombre
 window.onload = () => {
-  localStorage.removeItem("userName"); // 🔥 borra nombre SIEMPRE
+  localStorage.removeItem("userName");
   addMessage("bot", "Hola 💖 soy Lumi. ¿Cómo te llamas?");
 };
 </script>
