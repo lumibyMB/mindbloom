@@ -23,7 +23,7 @@
         placeholder="Escribe lo que sientes..."
         autocomplete="off"
       />
-      <button onclick="sendMessage()">Enviar</button>
+      <button id="sendBtn">Enviar</button>
     </div>
 
     <p class="disclaimer">
@@ -33,8 +33,6 @@
   </div>
 
   <script>
-    let isFirstMessage = true;
-
     function addMessage(role, text) {
       const chat = document.getElementById("chat");
 
@@ -54,35 +52,22 @@
 
       let userName = localStorage.getItem("userName");
 
-      // 🧠 CONTROL TOTAL DEL FLUJO (AQUÍ ESTÁ EL FIX)
+      // 👉 PRIMERA VEZ → guardar nombre
       if (!userName) {
+        localStorage.setItem("userName", message);
 
-        // 💬 PRIMER MENSAJE → Lumi pregunta nombre (SIN backend)
-        if (isFirstMessage) {
-          addMessage("user", message);
-          addMessage("bot", "Hola 💖 soy Lumi. ¿Cómo te llamas?");
-
-          isFirstMessage = false;
-          input.value = "";
-          return;
-        }
-
-        // 🧠 SEGUNDO MENSAJE → guardar nombre
-        localStorage.setItem("userName");
-        userName = message;
-
-        addMessage("userName", message);
-        addMessage("bot", `Mucho gusto, ${userName} 💖 ¿cómo te sientes hoy?`);
+        addMessage("user", message);
+        addMessage("bot", `Mucho gusto, ${message} 💖 ¿cómo te sientes hoy?`);
 
         input.value = "";
         return;
       }
 
-      // 💬 CONVERSACIÓN NORMAL (YA CON NOMBRE)
-      addMessage("userName", message);
+      // 👉 conversación normal
+      addMessage("user", message);
 
       try {
-        const response = await fetch("http://localhost:3000/chat", {
+        const response = await fetch("/chat", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -91,7 +76,6 @@
             message,
             userName
           })
-          
         });
 
         const data = await response.json();
@@ -99,19 +83,27 @@
         addMessage("bot", data.reply);
 
       } catch (error) {
-        addMessage("user", message);
+        console.error(error);
+        addMessage("bot", "Error al enviar mensaje 😢");
       }
 
       input.value = "";
     }
 
-    // 💬 MENSAJE INICIAL AUTOMÁTICO
-    window.onload = () => {
-      const userName = localStorage.getItem("userName");
+    // 👉 botón
+    document.getElementById("sendBtn").addEventListener("click", sendMessage);
 
-      if (!userName) {
+    // 👉 enviar con ENTER
+    document.getElementById("input").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    });
+
+    // 👉 mensaje inicial
+    window.onload = () => {
+      if (!localStorage.getItem("userName")) {
         addMessage("bot", "Hola 💖 soy Lumi. ¿Cómo te llamas?");
-        isFirstMessage = false;
       }
     };
   </script>
