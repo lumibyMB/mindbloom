@@ -6,6 +6,9 @@ const fetch = require("node-fetch");
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/index.html");
+});
 
 const systemPrompt = `
 Eres Lumi, la asistente emocional de MindBloom.
