@@ -32,81 +32,91 @@
 
   </div>
 
-  <script>
-    function addMessage(role, text) {
-      const chat = document.getElementById("chat");
+ <script>
+let step = "askName"; // controla flujo
 
-      chat.innerHTML += `
-        <div class="message ${role}">
-          <p>${text}</p>
-        </div>
-      `;
+function addMessage(role, text) {
+  const chat = document.getElementById("chat");
 
-      chat.scrollTop = chat.scrollHeight;
-    }
+  chat.innerHTML += `
+    <div class="message ${role}">
+      <p>${text}</p>
+    </div>
+  `;
 
-    async function sendMessage() {
-      const input = document.getElementById("input");
-      const message = input.value.trim();
-      if (!message) return;
+  chat.scrollTop = chat.scrollHeight;
+}
 
-      let userName = localStorage.getItem("userName");
+async function sendMessage() {
+  const input = document.getElementById("input");
+  const message = input.value.trim();
+  if (!message) return;
 
-      // 👉 PRIMERA VEZ → guardar nombre
-      if (!userName) {
-        localStorage.setItem("userName", message);
+  let userName = localStorage.getItem("userName");
 
-        addMessage("user", message);
-        addMessage("bot", `Mucho gusto, ${message} 💖 ¿cómo te sientes hoy?`);
+  // 👉 PASO 1: pedir nombre
+  if (!userName && step === "askName") {
+    addMessage("user", message);
+    addMessage("bot", "Hola 💖 soy Lumi. ¿Cómo te llamas?");
+    step = "getName";
 
-        input.value = "";
-        return;
-      }
+    input.value = "";
+    return;
+  }
 
-      // 👉 conversación normal
-      addMessage("user", message);
+  // 👉 PASO 2: guardar nombre
+  if (!userName && step === "getName") {
+    localStorage.setItem("userName", message);
+    userName = message;
 
-      try {
-        const response = await fetch("/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            message,
-            userName
-          })
-        });
+    addMessage("user", message);
+    addMessage("bot", `Mucho gusto, ${userName} 💖 ¿cómo te sientes hoy?`);
 
-        const data = await response.json();
+    input.value = "";
+    return;
+  }
 
-        addMessage("bot", data.reply);
+  // 👉 conversación normal
+  addMessage("user", message);
 
-      } catch (error) {
-        console.error(error);
-        addMessage("bot", "Error al enviar mensaje 😢");
-      }
-
-      input.value = "";
-    }
-
-    // 👉 botón
-    document.getElementById("sendBtn").addEventListener("click", sendMessage);
-
-    // 👉 enviar con ENTER
-    document.getElementById("input").addEventListener("keypress", function(e) {
-      if (e.key === "Enter") {
-        sendMessage();
-      }
+  try {
+    const response = await fetch("/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message,
+        userName
+      })
     });
 
-    // 👉 mensaje inicial
-    window.onload = () => {
-      if (!localStorage.getItem("userName")) {
-        addMessage("bot", "Hola 💖 soy Lumi. ¿Cómo te llamas?");
-      }
-    };
-  </script>
+    const data = await response.json();
+
+    addMessage("bot", data.reply);
+
+  } catch (error) {
+    console.error(error);
+    addMessage("bot", "Error 😢");
+  }
+
+  input.value = "";
+}
+
+// botón
+document.getElementById("sendBtn").addEventListener("click", sendMessage);
+
+// enter
+document.getElementById("input").addEventListener("keypress", function(e) {
+  if (e.key === "Enter") sendMessage();
+});
+
+// 👉 INICIO LIMPIO
+window.onload = () => {
+  localStorage.removeItem("userName"); // 🔥 borra nombre SIEMPRE
+  addMessage("bot", "Hola 💖 soy Lumi. ¿Cómo te llamas?");
+};
+</script>
 
 </body>
 </html>
