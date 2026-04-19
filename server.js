@@ -1,15 +1,19 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const fetch = require("node-fetch");
+const path = require("path"); // 🔥 IMPORTANTE
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
-app.get("/", (req, res) => 
+
+// 🔥 esto sirve los archivos (css, html, etc)
 app.use(express.static(__dirname));
-{
-  res.sendFile(__dirname + "/index.html");
+
+// 🔥 ruta principal
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 const systemPrompt = `
