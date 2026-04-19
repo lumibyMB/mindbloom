@@ -17,6 +17,53 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
+
+// 🧠 DETECTOR DE EMOCIÓN
+function detectEmotion(text) {
+  const t = text.toLowerCase();
+
+  if (t.includes("triste") || t.includes("mal") || t.includes("llorar"))
+    return "triste";
+
+  if (t.includes("ansioso") || t.includes("estres") || t.includes("nervioso"))
+    return "ansioso";
+
+  if (t.includes("feliz") || t.includes("bien") || t.includes("contento"))
+    return "feliz";
+
+  if (t.includes("enojado") || t.includes("molesto") || t.includes("frustrado"))
+    return "enojado";
+
+  return "neutral";
+}
+
+
+// 🧠 LIMPIAR NOMBRE (TOLERANTE A ERRORES)
+function cleanUserName(text) {
+  let name = text.toLowerCase();
+
+  name = name
+    .replace(/me\s*y?a?m?o/i, "")   // me llamo / me yamo
+    .replace(/soy/i, "")
+    .replace(/soi/i, "")
+    .replace(/mi\s*nombre\s*es/i, "")
+    .trim();
+
+  // quitar símbolos raros
+  name = name.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "");
+
+  // tomar primera palabra
+  name = name.split(" ")[0];
+
+  // capitalizar
+  if (name.length > 0) {
+    name = name.charAt(0).toUpperCase() + name.slice(1);
+  }
+
+  return name;
+}
+
+
 const systemPrompt = `
 Eres Lumi, la asistente emocional de MindBloom.
 
@@ -120,21 +167,57 @@ Ser una presencia constante, segura y empática, como una amiga que escucha sin 
 `;
 
 app.post("/chat", async (req, res) => {
-  const { message, userName } = req.body;
+  let { message, userName } = req.body;
+
+  // 🧠 limpiar nombre si viene sucio
+  if (userName) {
+    userName = cleanUserName(userName);
+  }
+
+  const emotion = detectEmotion(message);
 
   let messages = [
     { role: "system", content: systemPrompt }
   ];
 
-  // 👉 si hay nombre, se lo recordamos al modelo
+  // 👉 nombre limpio
   if (userName) {
     messages.push({
       role: "system",
-      content: `El usuario se llama ${userName}. Usa su nombre de forma natural.`
+      content: `El usuario se llama ${userName}. No uses ningún otro nombre.`
     });
   }
 
-  // 👉 mensaje del usuario
+  // 🎭 tono dinámico real
+  if (emotion === "triste") {
+    messages.push({
+      role: "system",
+      content: "Responde con mucha empatía, suavidad y apoyo emocional."
+    });
+  }
+
+  if (emotion === "ansioso") {
+    messages.push({
+      role: "system",
+      content: "Responde con calma, tranquilidad y ayuda a relajar."
+    });
+  }
+
+  if (emotion === "feliz") {
+    messages.push({
+      role: "system",
+      content: "Responde con energía positiva y entusiasmo."
+    });
+  }
+
+  if (emotion === "enojado") {
+    messages.push({
+      role: "system",
+      content: "Responde con paciencia y validación emocional."
+    });
+  }
+
+  // 👉 mensaje usuario
   messages.push({
     role: "user",
     content: message
@@ -158,7 +241,6 @@ app.post("/chat", async (req, res) => {
       }
     );
 
-    // 🔥 ESTO ERA LO QUE FALTABA
     const data = await response.json();
 
     console.log("HF response:", data);
