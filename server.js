@@ -123,11 +123,11 @@ app.post("/chat", async (req, res) => {
       }
     );
 
-    const data = await response.json();
+  console.log(data);
 
-    const reply =
-      data?.choices?.[0]?.message?.content ||
-      "Estoy teniendo un pequeño problema técnico.";
+const reply =
+  data?.choices?.[0]?.message?.content ||
+  "Error: revisa logs";
 
     res.json({ reply });
 
