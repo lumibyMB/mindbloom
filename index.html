@@ -68,10 +68,10 @@
         }
 
         // 🧠 SEGUNDO MENSAJE → guardar nombre
-        localStorage.setItem("userName", message);
+        localStorage.setItem("userName");
         userName = message;
 
-        addMessage("user", message);
+        addMessage("userName", message);
         addMessage("bot", `Mucho gusto, ${userName} 💖 ¿cómo te sientes hoy?`);
 
         input.value = "";
@@ -79,7 +79,7 @@
       }
 
       // 💬 CONVERSACIÓN NORMAL (YA CON NOMBRE)
-      addMessage("user", message);
+      addMessage("userName", message);
 
       try {
         const response = await fetch("http://localhost:3000/chat", {
@@ -91,6 +91,7 @@
             message,
             userName
           })
+          
         });
 
         const data = await response.json();
