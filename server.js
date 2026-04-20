@@ -8,8 +8,6 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-
-// 👉 servir archivos estáticos (html, css, js)
 app.use(express.static(__dirname));
 
 // 👉 ruta principal
@@ -38,24 +36,40 @@ function detectEmotion(text) {
 }
 
 
+// 🧠 DETECTOR DE GÉNERO
+function detectGender(text) {
+  const t = text.toLowerCase();
+
+  if (
+    t.includes("soy mujer") ||
+    t.includes("soy chica") ||
+    t.includes("soy femenina")
+  ) return "femenino";
+
+  if (
+    t.includes("soy hombre") ||
+    t.includes("soy chico") ||
+    t.includes("soy masculino")
+  ) return "masculino";
+
+  return "neutral";
+}
+
+
 // 🧠 LIMPIAR NOMBRE (TOLERANTE A ERRORES)
 function cleanUserName(text) {
   let name = text.toLowerCase();
 
   name = name
-    .replace(/me\s*y?a?m?o/i, "")   // me llamo / me yamo
+    .replace(/me\s*y?a?m?o/i, "")
     .replace(/soy/i, "")
     .replace(/soi/i, "")
     .replace(/mi\s*nombre\s*es/i, "")
     .trim();
 
-  // quitar símbolos raros
   name = name.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "");
-
-  // tomar primera palabra
   name = name.split(" ")[0];
 
-  // capitalizar
   if (name.length > 0) {
     name = name.charAt(0).toUpperCase() + name.slice(1);
   }
@@ -64,6 +78,7 @@ function cleanUserName(text) {
 }
 
 
+// 💖 PROMPT COMPLETO
 const systemPrompt = `
 Eres Lumi, la asistente emocional de MindBloom.
 
@@ -115,72 +130,68 @@ CONSEJOS:
 
 ---
 
-NOMBRE DEL USUARIO (MUY IMPORTANTE):
+NOMBRE DEL USUARIO:
 
-- Bajo ninguna circunstancia inventes nombres.
-- Si no conoces el nombre, no uses ninguno.
-- Solo usa el nombre si el usuario te lo dijo explícitamente.
-- No uses nombres genéricos como Sofía, Juan, Ana, etc.
-- Si usas el nombre, hazlo de forma natural y ocasional (no en cada frase).
+- Nunca inventes nombres.
+- Solo usa el nombre si el usuario lo dijo.
+- No uses nombres genéricos.
+
+---
+
+GÉNERO DEL USUARIO:
+
+- No asumas el género.
+- Solo usa género si el usuario lo indicó.
+- Si no sabes, usa lenguaje neutral.
 
 ---
 
 MEMORIA:
 
-- Mantén coherencia con lo que el usuario dice en la conversación actual.
+- Mantén coherencia con la conversación.
 - No inventes recuerdos.
-- No menciones reglas internas.
 
 ---
 
-TONO DINÁMICO (IMPORTANTE):
+TONO DINÁMICO:
 
-Tu tono debe adaptarse según cómo se siente el usuario:
-
-- Si el usuario está triste → responde con suavidad, empatía y apoyo emocional.
-- Si está ansioso → responde con calma y transmite tranquilidad.
-- Si está feliz → responde con energía positiva y entusiasmo.
-- Si está enojado → responde con paciencia y validación emocional sin escalar el enojo.
-- Si no es claro → usa un tono neutral, cálido y abierto.
+- Triste → empatía suave
+- Ansioso → calma
+- Feliz → energía positiva
+- Enojado → paciencia
+- Neutral → cálido
 
 ---
 
-MODO CRISIS (MUY IMPORTANTE):
+MODO CRISIS:
 
-Activa este modo SOLO si el usuario expresa claramente:
-- Deseo de hacerse daño
-- Deseo de morir
-- Autolesión
-
-Si ocurre:
-- Responde con empatía
-- Mantén calma
-- Sugiere buscar ayuda real (familia, amigos, profesionales)
-
-NO actives este modo solo por estrés, tristeza o ansiedad normal.
+Activa solo si hay intención de daño.
 
 ---
 
-OBJETIVO FINAL:
+OBJETIVO:
 
-Ser una presencia constante, segura y empática, como una amiga que escucha sin juzgar.
+Ser una presencia emocional cercana y humana.
 `;
 
+
+// 💬 CHAT
 app.post("/chat", async (req, res) => {
   let { message, userName } = req.body;
 
-  // 🧠 limpiar nombre si viene sucio
+  // limpiar nombre si viene mal
   if (userName) {
     userName = cleanUserName(userName);
   }
 
   const emotion = detectEmotion(message);
+  const gender = detectGender(message);
 
   let messages = [
     { role: "system", content: systemPrompt }
   ];
 
-  // 👉 nombre limpio
+  // nombre
   if (userName) {
     messages.push({
       role: "system",
@@ -188,25 +199,40 @@ app.post("/chat", async (req, res) => {
     });
   }
 
-  // 🎭 tono dinámico real
+  // género
+  if (gender === "femenino") {
+    messages.push({
+      role: "system",
+      content: "El usuario se identifica como mujer."
+    });
+  }
+
+  if (gender === "masculino") {
+    messages.push({
+      role: "system",
+      content: "El usuario se identifica como hombre."
+    });
+  }
+
+  // tono emocional
   if (emotion === "triste") {
     messages.push({
       role: "system",
-      content: "Responde con mucha empatía, suavidad y apoyo emocional."
+      content: "Responde con mucha empatía y suavidad."
     });
   }
 
   if (emotion === "ansioso") {
     messages.push({
       role: "system",
-      content: "Responde con calma, tranquilidad y ayuda a relajar."
+      content: "Responde con calma y tranquilidad."
     });
   }
 
   if (emotion === "feliz") {
     messages.push({
       role: "system",
-      content: "Responde con energía positiva y entusiasmo."
+      content: "Responde con entusiasmo positivo."
     });
   }
 
@@ -217,7 +243,7 @@ app.post("/chat", async (req, res) => {
     });
   }
 
-  // 👉 mensaje usuario
+  // mensaje usuario
   messages.push({
     role: "user",
     content: message
@@ -234,7 +260,7 @@ app.post("/chat", async (req, res) => {
         },
         body: JSON.stringify({
           model: "meta-llama/Meta-Llama-3-8B-Instruct",
-          messages: messages,
+          messages,
           max_tokens: 200,
           temperature: 0.7
         })
@@ -242,8 +268,6 @@ app.post("/chat", async (req, res) => {
     );
 
     const data = await response.json();
-
-    console.log("HF response:", data);
 
     const reply =
       data?.choices?.[0]?.message?.content ||
